@@ -2,7 +2,7 @@
 
 This project is a full-stack application demonstrating the power of Machine Learning in Cybersecurity. It classifies passwords into Weak, Medium, or Strong in real-time using a trained Random Forest model based on feature-engineered metrics.
 
-➡️ Live Demo: [Insert Deployment Link Here] (Will be updated after hosting)
+➡️ Live Demo: https://at-404.github.io/ai-password-strength-analyzer/
 
 ✨ Features
 
