@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Password Strength Analyzer</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f4f7f9;
+        }
+        .container {
+            max-width: 600px;
+        }
+        .strength-weak { background-color: #fee2e2; color: #ef4444; }
+        .strength-medium { background-color: #fef9c3; color: #eab308; }
+        .strength-strong { background-color: #d1fae5; color: #10b981; }
+    </style>
+</head>
+<body class="min-h-screen flex items-center justify-center p-4">
+
+    <div class="container bg-white shadow-xl rounded-xl p-8 space-y-6">
+        <header class="text-center">
+            <h1 class="text-3xl font-bold text-gray-800">AI Password Strength Analyzer</h1>
+            <p class="text-gray-500 mt-2">Powered by Python ML (Random Forest Classifier)</p>
+        </header>
+
+        <main>
+            <div class="space-y-4">
+                <label for="passwordInput" class="block text-sm font-medium text-gray-700">Enter a Password to Test:</label>
+                <!-- Using type 'text' for easy viewing during testing -->
+                <input type="text" id="passwordInput" placeholder="Type your password here..."
+                       class="w-full p-3 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500 transition duration-150 shadow-sm"
+                       oninput="checkPasswordStrength()">
+            </div>
+            
+            <div id="statusMessage" class="mt-4 hidden p-3 rounded-lg text-center font-medium"></div>
+
+            <div id="resultsArea" class="mt-6 border-t pt-6 hidden">
+                <h2 class="text-xl font-semibold text-gray-800 mb-4">Analysis Results</h2>
+                
+                <div class="flex flex-col md:flex-row justify-between items-center bg-gray-50 p-4 rounded-lg shadow-inner">
+                    <div class="text-lg font-medium">
+                        Strength: <span id="strengthOutput" class="inline-block px-3 py-1 rounded-full text-sm font-bold">...</span>
+                    </div>
+                    <div class="text-sm text-gray-600 mt-2 md:mt-0">
+                        Model Confidence: <span id="confidenceOutput" class="font-bold text-gray-700">...</span>
+                    </div>
+                </div>
+
+                <h3 class="text-lg font-semibold text-gray-700 mt-6 mb-3">Feature Details</h3>
+                <div id="detailsOutput" class="grid grid-cols-2 gap-4 text-sm">
+                    <!-- Details will be injected here -->
+                </div>
+            </div>
+
+        </main>
+    </div>
+
+    <script>
+        // *** IMPORTANT: CHANGE THIS URL AFTER DEPLOYMENT ***
+        // Use http://127.0.0.1:5000/predict for local testing.
+        // Change to your public API URL (e.g., https://yourapi.onrender.com/predict) after deployment.
+        const API_URL = 'http://127.0.0.1:5000/predict'; 
+        const inputElement = document.getElementById('passwordInput');
+        const statusElement = document.getElementById('statusMessage');
+        const resultsArea = document.getElementById('resultsArea');
+        const strengthOutput = document.getElementById('strengthOutput');
+        const confidenceOutput = document.getElementById('confidenceOutput');
+        const detailsOutput = document.getElementById('detailsOutput');
+
+        const debounce = (func, delay) => {
+            let timeoutId;
+            return (...args) => {
+                clearTimeout(timeoutId);
+                timeoutId = setTimeout(() => {
+                    func.apply(this, args);
+                }, delay);
+            };
+        };
+
+        const displayStatus = (message, type = 'info') => {
+            statusElement.textContent = message;
+            statusElement.className = 'mt-4 p-3 rounded-lg text-center font-medium';
+            statusElement.classList.remove('hidden', 'bg-red-100', 'text-red-700', 'bg-blue-100', 'text-blue-700');
+            
+            if (type === 'error') {
+                statusElement.classList.add('bg-red-100', 'text-red-700');
+            } else {
+                statusElement.classList.add('bg-blue-100', 'text-blue-700');
+            }
+            statusElement.classList.remove('hidden');
+            resultsArea.classList.add('hidden');
+        };
+
+        const renderResults = (data) => {
+            statusElement.classList.add('hidden');
+            resultsArea.classList.remove('hidden');
+
+            const strength = data.strength.toLowerCase();
+            strengthOutput.textContent = data.strength;
+            
+            strengthOutput.className = '';
+            strengthOutput.classList.add('inline-block', 'px-3', 'py-1', 'rounded-full', 'text-sm', 'font-bold');
+            strengthOutput.classList.add(`strength-${strength}`);
+
+            confidenceOutput.textContent = data.confidence;
+            
+            const hasSpecialText = data.details.has_special ? 'Yes' : 'No';
+
+            detailsOutput.innerHTML = `
+                <div class="p-3 bg-gray-50 rounded-lg">Length: <span class="font-semibold">${data.details.length}</span></div>
+                <div class="p-3 bg-gray-50 rounded-lg">Diversity Score (Max 4): <span class="font-semibold">${data.details.diversity_score}</span></div>
+                <div class="p-3 bg-gray-50 rounded-lg">Has Special Chars: <span class="font-semibold">${hasSpecialText}</span></div>
+                <div class="p-3 bg-gray-50 rounded-lg">Entropy Heuristic: <span class="font-semibold">${data.details.entropy_heuristic}</span></div>
+            `;
+        };
+
+        const fetchStrength = debounce(() => {
+            if (inputElement.value.length < 1) {
+                resultsArea.classList.add('hidden');
+                statusElement.classList.add('hidden');
+                return;
+            }
+            displayStatus('Analyzing password...', 'info');
+
+            fetch(API_URL, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ password: inputElement.value })
+            })
+            .then(response => response.json().then(data => {
+                if (!response.ok) {
+                    throw new Error(data.error || 'Prediction failed.');
+                }
+                renderResults(data);
+            }))
+            .catch(error => {
+                displayStatus(`Error: Could not connect to the API or an error occurred. Make sure 'api_endpoint.py' is running on port 5000. (${error.message})`, 'error');
+            });
+        }, 500);
+
+    </script>
+</body>
+</html>

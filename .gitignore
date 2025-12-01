@@ -1,0 +1,14 @@
+Compiled/Generated Files
+
+*.pyc
+pycache/
+
+Machine Learning Assets (Do NOT commit these large files)
+
+password_data.csv
+password_strength_model.joblib
+model_features.joblib
+
+Environment Variables
+
+.env
