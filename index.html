@@ -15,8 +15,8 @@
             max-width: 600px;
         }
         .strength-weak { background-color: #fee2e2; color: #ef4444; }
-        .strength-medium { background-color: #fef9c3; color: #eab308; }
-        .strength-strong { background-color: #d1fae5; color: #10b981; }
+        .strength-medium { background-color: #fef9c3; color: #7c09f6; }
+        .strength-strong { background-color: #d1fad2; color: #0d553d; }
     </style>
 </head>
 <body class="min-h-screen flex items-center justify-center p-4">
@@ -121,7 +121,7 @@
                 statusElement.classList.add('hidden');
                 return;
             }
-            displayStatus('Analyzing password...', 'info');
+            displayStatus('Analyzing password..', 'info');
 
             fetch(API_URL, {
                 method: 'POST',
@@ -135,7 +135,7 @@
                 renderResults(data);
             }))
             .catch(error => {
-                displayStatus(`Error: Could not connect to the API or an error occurred. Make sure 'api_endpoint.py' is running on port 5000. (${error.message})`, 'error');
+                displayStatus(`Error Could not connect to the API or an error occurred. Make sure 'api_endpoint.py' is running on port 5000. (${error.message})`, 'error');
             });
         }, 500);
 
